@@ -177,6 +177,7 @@ local function processData(szType, content)
 		result.server_port = info.port
 		result.transport = info.net
 		result.vmess_id = info.id
+		result.security = info.scy
 		result.alias = info.ps
 		result.packet_encoding = packet_encoding
 		-- result.mux = 1
@@ -212,6 +213,12 @@ local function processData(szType, content)
 			elseif info.serviceName then
 				result.serviceName = info.serviceName
 			end
+			-- gRPC 健康检查参数开始
+			result.health_check = 1
+			result.idle_timeout = 10
+			result.health_check_timeout = 5
+			result.permit_without_stream = 1
+			-- gRPC 健康检查参数结束
 		end
 		if info.net == 'quic' then
 			result.quic_guise = info.type
@@ -228,7 +235,7 @@ local function processData(szType, content)
 			elseif info.sni then
 				result.tls_host = info.sni
 			end
-			result.insecure = 1
+			result.insecure = "0"
 		else
 			result.tls = "0"
 		end
