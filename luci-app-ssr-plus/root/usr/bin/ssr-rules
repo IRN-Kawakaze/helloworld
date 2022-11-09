@@ -229,6 +229,8 @@ tp_rule() {
 	$ipt -A SS_SPEC_TPROXY -p udp -d 224.0.0.0/4 -j RETURN
 	$ipt -A SS_SPEC_TPROXY -p udp -d 240.0.0.0/4 -j RETURN
 	$ipt -A SS_SPEC_TPROXY -p udp ! --dport 53 -d $SERVER -j RETURN
+	$ipt -A SS_SPEC_TPROXY -p udp -m set --match-set whitelist dst -j RETURN
+	$ipt -A SS_SPEC_TPROXY -p udp $PROXY_PORTS -m set --match-set blacklist dst -j TPROXY --on-port "$LOCAL_PORT" --tproxy-mark 0x01/0x01
 	[ "$server" != "$SERVER" ] && ipset -! add whitelist $SERVER
 	$ipt -A SS_SPEC_TPROXY -p udp -m set --match-set bplan src -j RETURN
 	$ipt -A SS_SPEC_TPROXY -p udp $PROXY_PORTS -m set --match-set fplan src -j TPROXY --on-port "$LOCAL_PORT" --tproxy-mark 0x01/0x01
