@@ -236,6 +236,7 @@ local function processData(szType, content)
 				result.tls_host = info.sni
 			end
 			result.insecure = "0"
+			result.fingerprint = "ios"
 		else
 			result.tls = "0"
 		end
