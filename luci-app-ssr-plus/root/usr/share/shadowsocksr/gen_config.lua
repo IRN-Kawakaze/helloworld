@@ -130,25 +130,76 @@ local Xray = {
 		-- error = "/var/ssrplus.log",
 		loglevel = "warning"
 	},
-	-- 传入连接
-	inbound = (local_port ~= "0") and {
-		-- listening
-		port = tonumber(local_port),
-		protocol = "dokodemo-door",
-		settings = {network = proto, followRedirect = true},
-		sniffing = {enabled = true, destOverride = {"http", "tls"}}
-	} or nil,
-	-- 开启 socks 代理
-	inboundDetour = (proto:find("tcp") and socks_port ~= "0") and {
-		{
-			-- socks
-			protocol = "socks",
-			port = tonumber(socks_port),
-			settings = {auth = "noauth", udp = true}
-		}
-	} or nil,
-	-- 传出连接
-	outbound = {
+	-- 初始化 inbounds 表
+	inbounds = {},
+	-- 初始化 outbounds 表
+	outbounds = {},
+}
+-- 传入连接
+-- 添加 dokodemo-door 配置，如果 local_port 不为 0
+if local_port ~= "0" then
+	table.insert(Xray.inbounds, {
+			-- listening
+			port = tonumber(local_port),
+			protocol = "dokodemo-door",
+			settings = {network = proto, followRedirect = true},
+			sniffing = {
+				enabled = true,
+				destOverride = {"http", "tls", "quic"},
+				metadataOnly = false,
+				domainsExcluded = {
+					"courier.push.apple.com",
+					"rbsxbxp-mim.vivox.com",
+					"rbsxbxp.www.vivox.com",
+					"rbsxbxp-ws.vivox.com",
+					"rbspsxp.www.vivox.com",
+					"rbspsxp-mim.vivox.com",
+					"rbspsxp-ws.vivox.com",
+					"rbswxp.www.vivox.com",
+					"rbswxp-mim.vivox.com",
+					"disp-rbspsp-5-1.vivox.com",
+					"disp-rbsxbp-5-1.vivox.com",
+					"proxy.rbsxbp.vivox.com",
+					"proxy.rbspsp.vivox.com",
+					"proxy.rbswp.vivox.com",
+					"rbswp.vivox.com",
+					"rbsxbp.vivox.com",
+					"rbspsp.vivox.com",
+					"rbspsp.www.vivox.com",
+					"rbswp.www.vivox.com",
+					"rbsxbp.www.vivox.com",
+					"rbsxbxp.vivox.com",
+					"rbspsxp.vivox.com",
+					"rbswxp.vivox.com",
+					"Mijia Cloud",
+					"dlg.io.mi.com"
+				}
+			}
+	})
+end
+-- 开启 socks 代理
+-- 检查是否启用 socks 代理
+if proto and proto:find("tcp") and socks_port ~= "0" then
+	table.insert(Xray.inbounds, {
+		-- socks
+		protocol = "socks",
+		port = tonumber(socks_port),
+		settings = {
+			auth = socks_server.socks5_auth or "noauth",
+			udp = true,
+			mixed = ((socks_server.socks5_mixed == '1') and true or false) or (socks_server.server == 'same') and nil,
+			accounts = (socks_server.server ~= "same" and (socks_server.socks5_auth and socks_server.socks5_auth ~= "noauth")) and {
+				{
+					user = socks_server.socks5_user,
+					pass = socks_server.socks5_pass
+				}
+			} or nil
+		} or nil
+	})
+end
+-- 传出连接
+Xray.outbounds = {
+	{
 		protocol = server.v2ray_protocol,
 		settings = outbound_settings,
 		-- 底层传输配置
@@ -230,7 +281,7 @@ local Xray = {
 			concurrency = tonumber(server.concurrency),
 			packetEncoding = (server.v2ray_protocol == "vmess" or server.v2ray_protocol == "vless") and server.packet_encoding or nil
 		} or nil
-	} or nil
+	}
 }
 local cipher = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA:AES128-SHA:AES256-SHA:DES-CBC3-SHA"
 local cipher13 = "TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384"
